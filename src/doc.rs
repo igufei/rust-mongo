@@ -63,7 +63,7 @@ where
                 let bson_doc = mongodb::bson::to_document(&self.data).has_err("文档解析失败")?;
                 let update_data = doc! {
                     "data":bson_doc,
-                    "update_time":timestamp() as i64
+                    "updated_at":timestamp() as i64
                 };
                 self.db
                     .unwrap()
