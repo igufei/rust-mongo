@@ -1,8 +1,8 @@
 use std::io;
 
-use futures::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{from_bson, Document},
+    bson::{from_bson, Bson, Document},
     error::Error,
     options::{AggregateOptions, FindOptions},
     Client, Database,
@@ -80,15 +80,28 @@ impl Mongo {
     }
 
     /// 查询多条数据
-    pub async fn find<T: DeserializeOwned + Unpin + Send + Sync>(
+    pub async fn find<T>(
         &self,
         collection_name: &str,
         filter: Document,
         option: Option<FindOptions>,
-    ) -> Result<Vec<T>, Error> {
-        let collection = self.db.collection::<T>(collection_name);
-        let cursor = collection.find(filter, option).await?;
-        Ok(cursor.try_collect().await.unwrap_or_else(|_| vec![]))
+    ) -> Result<Vec<T>, Error>
+    where
+        T: DeserializeOwned,
+    {
+        let collection = self.db.collection::<Bson>(collection_name);
+        let mut cursor = collection.find(filter, option).await?;
+        let mut result = Vec::new();
+        while let Some(doc) = cursor.next().await {
+            match doc {
+                Ok(doc) => {
+                    let t = from_bson::<T>(doc)?;
+                    result.push(t);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(result)
     }
 
     /// 删除一条数据
