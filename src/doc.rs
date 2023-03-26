@@ -1,8 +1,8 @@
 use mongodb::{
-    bson::{bson, doc, oid::ObjectId, Document},
+    bson::{doc, oid::ObjectId, Document},
     options::FindOptions,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use  serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
     error::{Error, ResultExtention},

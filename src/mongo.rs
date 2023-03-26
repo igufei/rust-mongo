@@ -7,7 +7,7 @@ use mongodb::{
     options::{AggregateOptions, FindOptions},
     Client, Database,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::OnceCell;
 pub struct Mongo {
     db: Database,
@@ -106,7 +106,7 @@ impl Mongo {
 
     /// 删除一条数据
     pub async fn delete_one(&self, collection_name: &str, filter: Document) -> Result<(), Error> {
-        let document = self
+        self
             .db
             .collection::<Document>(collection_name)
             .delete_one(filter, None)
@@ -137,7 +137,7 @@ impl Mongo {
         filter: Document,
         update: Document,
     ) -> Result<(), Error> {
-        let document = self
+        self
             .db
             .collection::<Document>(collection_name)
             .update_one(filter, update, None)
