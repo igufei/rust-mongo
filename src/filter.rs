@@ -39,7 +39,6 @@ impl FilterList {
         let filter = doc! {
             "$and":filter_list
         };
-        println!("{}",filter);
         filter
     }
 }
