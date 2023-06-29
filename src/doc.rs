@@ -2,7 +2,7 @@ use mongodb::{
     bson::{doc, oid::ObjectId, Document},
     options::FindOptions,
 };
-use  serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
     error::{Error, ResultExtention},
@@ -134,6 +134,7 @@ where
             .has_err("查询列表失败")?;
         Ok(list)
     }
+
     ///
     pub async fn count(filter: Document) -> Result<u64, Error> {
         let db = Mongo::instance().await;
@@ -163,6 +164,31 @@ where
             .await
             .has_err("批量插入数据失败")?;
         Ok(())
+    }
+
+    pub async fn delete_many(filter: Document) -> Result<u64, Error> {
+        let db = Mongo::instance().await;
+        let coll_name = Self::to_coll_name();
+        let count = db
+            .delete_many(&coll_name, filter)
+            .await
+            .has_err("删除多个删除")?;
+        Ok(count)
+    }
+
+    pub async fn delete_all(keyword: &str) -> Result<u64, Error> {
+        let db = Mongo::instance().await;
+        let coll_name = Self::to_coll_name();
+        let count = db
+            .delete_many(
+                &coll_name,
+                doc! {"data.who":{
+                    "$regex": keyword
+                }},
+            )
+            .await
+            .has_err("删除多个删除")?;
+        Ok(count)
     }
 }
 
