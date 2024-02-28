@@ -18,7 +18,13 @@ impl Mongo {
         MONGODB.get_or_init(Mongo::init_mongodb).await
     }
     async fn init_mongodb() -> Mongo {
-        let result = Client::with_uri_str("mongodb://localhost:27017").await;
+        let db_host = match std::env::consts::OS {
+            "macos" => "mongodb://192.168.2.64:27017",
+            "linux" => "mongodb://mongo:27017",
+            _ => "mongodb://192.168.2.64:27017",
+        };
+
+        let result = Client::with_uri_str(db_host).await;
         match result {
             Ok(client) => {
                 let db = client.database("wxmp");
@@ -106,8 +112,7 @@ impl Mongo {
 
     /// 删除一条数据
     pub async fn delete_one(&self, collection_name: &str, filter: Document) -> Result<(), Error> {
-        self
-            .db
+        self.db
             .collection::<Document>(collection_name)
             .delete_one(filter, None)
             .await?;
@@ -137,8 +142,7 @@ impl Mongo {
         filter: Document,
         update: Document,
     ) -> Result<(), Error> {
-        self
-            .db
+        self.db
             .collection::<Document>(collection_name)
             .update_one(filter, update, None)
             .await?;
