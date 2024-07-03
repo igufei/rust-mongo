@@ -135,14 +135,14 @@ where
         Ok(list)
     }
 
-    ///
+    /// 获取数量
     pub async fn count(filter: Document) -> Result<u64, Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
         let count = db.count(&coll_name, filter).await.has_err("查询数量失败")?;
         Ok(count)
     }
-
+    /// 插入多条数据
     pub async fn insert_many(documents: Vec<T>) -> Result<(), Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
@@ -166,6 +166,7 @@ where
         Ok(())
     }
 
+    /// 删除多条数据
     pub async fn delete_many(filter: Document) -> Result<u64, Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
@@ -176,6 +177,7 @@ where
         Ok(count)
     }
 
+    /// 删除所有数据
     pub async fn delete_all(keyword: &str) -> Result<u64, Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
@@ -193,6 +195,7 @@ where
 }
 
 impl<T> Doc<T> {
+    /// 获取集合名称
     fn to_coll_name() -> String {
         let type_name = type_name::<T>();
         let type_parts: Vec<&str> = type_name.split("::").collect();

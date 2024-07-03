@@ -1,3 +1,4 @@
+
 use std::io;
 
 use futures::{StreamExt, TryStreamExt};
@@ -130,12 +131,12 @@ impl Mongo {
     }
 
     /// 更新一条数据
-    /// ```
-    /// let filter = doc! {"name": "Alice"};
-    /// let update = doc! {"$set": {"age": 26}};
-    /// let options = UpdateOptions::builder().upsert(false).build();
-    /// collection.update_one(filter, update, options).await?;
-    /// ```
+    // ```
+    // let filter = doc! {"name": "Alice"};
+    // let update = doc! {"$set": {"age": 26}};
+    // let options = UpdateOptions::builder().upsert(false).build();
+    // collection.update_one(filter, update, options).await?;
+    // ```
     pub async fn update_one(
         &self,
         collection_name: &str,
