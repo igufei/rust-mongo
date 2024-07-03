@@ -1,28 +1,30 @@
-
+use std::cell::OnceCell;
+use std::sync::{Arc, Once};
 use std::io;
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{from_bson, Bson, Document},
-    error::Error,
-    options::{AggregateOptions, FindOptions},
-    Client, Database,
+    bson::{Bson, Document, from_bson},
+    Client,
+    Database,
+    error::Error, options::{AggregateOptions, FindOptions},
 };
 use serde::{de::DeserializeOwned, Serialize};
-use tokio::sync::OnceCell;
+//use tokio::sync::OnceCell;
+
 pub struct Mongo {
     db: Database,
 }
 static MONGODB: OnceCell<Mongo> = OnceCell::const_new();
 impl Mongo {
-    pub async fn instance() -> &'static Mongo {
-        MONGODB.get_or_init(Mongo::init_mongodb).await
+    pub  fn instance() -> &'static Mongo {
+        MONGODB.get_or_init(Mongo::init_mongodb)
     }
     async fn init_mongodb() -> Mongo {
         let db_host = match std::env::consts::OS {
-            "macos" => "mongodb://192.168.2.64:27017",
+            "macos" => "mongodb://192.168.2.3:27017",
             "linux" => "mongodb://mongo:27017",
-            _ => "mongodb://192.168.2.64:27017",
+            _ => "mongodb://192.168.2.3:27017",
         };
 
         let result = Client::with_uri_str(db_host).await;
@@ -38,27 +40,27 @@ impl Mongo {
     }
 
     /// 插入一条数据
-    pub async fn insert_one<T: Serialize>(
+    pub async fn insert_one<T: Serialize + Send + Sync>(
         &self,
         collection_name: &str,
         document: T,
     ) -> Result<(), Error> {
         self.db
             .collection(collection_name)
-            .insert_one(document, None)
+            .insert_one(document)
             .await?;
         Ok(())
     }
 
     /// 插入多条数据
-    pub async fn insert_many<T: Serialize>(
+    pub async fn insert_many<T: Serialize + Send + Sync>(
         &self,
         collection_name: &str,
         documents: Vec<T>,
     ) -> Result<(), Error> {
         self.db
             .collection(collection_name)
-            .insert_many(documents, None)
+            .insert_many(documents)
             .await?;
         Ok(())
     }
@@ -70,7 +72,7 @@ impl Mongo {
         filter: Document,
     ) -> Result<T, Error> {
         let collection = self.db.collection(collection_name);
-        let document = collection.find_one(filter, None).await?;
+        let document = collection.find_one(filter).await?;
         match document {
             Some(doc) => {
                 let result = from_bson(doc);
@@ -97,7 +99,7 @@ impl Mongo {
         T: DeserializeOwned,
     {
         let collection = self.db.collection::<Bson>(collection_name);
-        let mut cursor = collection.find(filter, option).await?;
+        let mut cursor = collection.find(filter).with_options(option).await?;
         let mut result = Vec::new();
         while let Some(doc) = cursor.next().await {
             match doc {
@@ -115,7 +117,7 @@ impl Mongo {
     pub async fn delete_one(&self, collection_name: &str, filter: Document) -> Result<(), Error> {
         self.db
             .collection::<Document>(collection_name)
-            .delete_one(filter, None)
+            .delete_one(filter)
             .await?;
         Ok(())
     }
@@ -125,7 +127,7 @@ impl Mongo {
         let document = self
             .db
             .collection::<Document>(collection_name)
-            .delete_many(filter, None)
+            .delete_many(filter)
             .await?;
         Ok(document.deleted_count)
     }
@@ -145,7 +147,7 @@ impl Mongo {
     ) -> Result<(), Error> {
         self.db
             .collection::<Document>(collection_name)
-            .update_one(filter, update, None)
+            .update_one(filter, update)
             .await?;
         Ok(())
     }
@@ -160,7 +162,7 @@ impl Mongo {
         let document = self
             .db
             .collection::<Document>(collection_name)
-            .update_many(filter, update, None)
+            .update_many(filter, update)
             .await?;
         Ok(document.modified_count)
     }
@@ -170,7 +172,7 @@ impl Mongo {
         let count = self
             .db
             .collection::<Document>(collection_name)
-            .count_documents(filter, None)
+            .count_documents(filter)
             .await?;
         Ok(count)
     }
@@ -185,7 +187,8 @@ impl Mongo {
         let documents = self
             .db
             .collection::<Document>(collection_name)
-            .aggregate(pipeline, options)
+            .aggregate(pipeline)
+            .with_options(options)
             .await?;
         Ok(documents.try_collect().await.unwrap_or_else(|_| vec![]))
     }

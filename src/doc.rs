@@ -1,5 +1,7 @@
+use std::any::type_name;
+
 use mongodb::{
-    bson::{doc, oid::ObjectId, Document},
+    bson::{doc, Document, oid::ObjectId},
     options::FindOptions,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -10,7 +12,7 @@ use crate::{
 };
 
 use super::mongo::Mongo;
-use std::any::type_name;
+
 #[derive(Serialize, Deserialize)]
 pub struct Doc<T> {
     pub _id: ObjectId,
@@ -29,11 +31,11 @@ pub struct Doc<T> {
 }
 impl<T> Doc<T>
 where
-    T: Serialize + DeserializeOwned,
+    T: Serialize + DeserializeOwned + Send + Sync,
 {
     /// 通过object_id 获取一个文档
     pub async fn load(_id: &str) -> Result<Self, Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let _id = ObjectId::parse_str(_id).has_err("资源id不合法")?;
         let mut doc = db
@@ -49,7 +51,7 @@ where
     /// 获取第一个文档
     pub async fn frist() -> Result<Self, Error> {
         let coll_name = Self::to_coll_name();
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let mut doc = db
             .find_one::<Self>(&coll_name, doc! {})
             .await
@@ -63,7 +65,7 @@ where
     /// 创建一个新的文档
     pub async fn create(data: T) -> Result<Self, Error> {
         let coll_name = Self::to_coll_name();
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         Ok(Self {
             _id: ObjectId::new(),
             data,
@@ -120,7 +122,7 @@ where
 
     /// `page_num`第一页为1
     pub async fn list(page_num: u64, filter: Document) -> Result<Vec<Doc<T>>, Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let page_num = page_num - 1;
         let options = FindOptions::builder()
@@ -137,14 +139,14 @@ where
 
     /// 获取数量
     pub async fn count(filter: Document) -> Result<u64, Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let count = db.count(&coll_name, filter).await.has_err("查询数量失败")?;
         Ok(count)
     }
     /// 插入多条数据
     pub async fn insert_many(documents: Vec<T>) -> Result<(), Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let mut list = vec![];
         for ele in documents {
@@ -168,7 +170,7 @@ where
 
     /// 删除多条数据
     pub async fn delete_many(filter: Document) -> Result<u64, Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let count = db
             .delete_many(&coll_name, filter)
@@ -179,7 +181,7 @@ where
 
     /// 删除所有数据
     pub async fn delete_all(keyword: &str) -> Result<u64, Error> {
-        let db = Mongo::instance().await;
+        let db = Mongo::instance();
         let coll_name = Self::to_coll_name();
         let count = db
             .delete_many(

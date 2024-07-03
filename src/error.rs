@@ -1,4 +1,5 @@
 use std::fmt::Display;
+
 /// mongodb error
 pub struct Error(pub &'static str);
 
