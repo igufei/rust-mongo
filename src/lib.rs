@@ -4,8 +4,8 @@ pub use my_module::*;
 
 pub mod doc;
 pub mod error;
-pub mod mongo;
 pub mod filter;
+pub mod mongo;
 mod my_module {
     pub use mongodb;
 }

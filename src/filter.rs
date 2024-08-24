@@ -1,33 +1,61 @@
 use mongodb::bson::{doc, Document};
-
-pub struct Filter {
-    pub key: String,
-    pub value: Option<String>,
+pub trait FilterDoc {
+    fn to_doc(&self) -> Document;
 }
-impl Filter {
-    pub fn to_doc(&self) -> Document {
+/// 相似
+pub struct Like {
+    pub key: String,
+    pub value: String,
+}
+impl Like {
+    pub fn new(key: &str, value: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+impl FilterDoc for Like {
+    fn to_doc(&self) -> Document {
         let key = format!("data.{}", &self.key);
-        let filter = match &self.value {
-            Some(value) => {
-                doc! {
-                    key:{
-                        "$regex": value
-                    }
-                }
+        let filter = doc! {
+            key:{
+                "$regex": &self.value
             }
-            None => doc! {},
         };
         filter
     }
 }
 
-pub struct FilterList(Vec<Filter>);
-impl FilterList {
+/// 相等
+pub struct Eq {
+    pub key: String,
+    pub value: String,
+}
+impl Eq {
+    pub fn new(key: &str, value: &str) -> Self {
+        Self {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
+    }
+}
+impl FilterDoc for Eq {
+    fn to_doc(&self) -> Document {
+        let key = format!("data.{}", &self.key);
+        let filter = doc! {
+            key:&self.value
+        };
+        filter
+    }
+}
+pub struct Filter(Vec<Box<dyn FilterDoc>>);
+impl Filter {
     pub fn new() -> Self {
         Self(vec![])
     }
-    pub fn push(&mut self, filter: Filter) -> &mut Self {
-        self.0.push(filter);
+    pub fn push<T: FilterDoc + 'static>(&mut self, filter: T) -> &mut Self {
+        self.0.push(Box::new(filter));
         self
     }
     pub fn to_doc(&self) -> Document {
@@ -37,7 +65,7 @@ impl FilterList {
             filter_list.push(filter_item);
         }
         let filter = doc! {
-            "$and":filter_list
+        "$and": filter_list
         };
         filter
     }

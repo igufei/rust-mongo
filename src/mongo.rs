@@ -1,44 +1,50 @@
-use std::cell::OnceCell;
-use std::sync::{Arc, Once};
 use std::io;
+use std::ptr::addr_of;
+use std::sync::Once;
 
 use futures::{StreamExt, TryStreamExt};
 use mongodb::{
-    bson::{Bson, Document, from_bson},
-    Client,
-    Database,
-    error::Error, options::{AggregateOptions, FindOptions},
+    bson::{from_bson, Bson, Document},
+    error::Error,
+    options::{AggregateOptions, FindOptions},
+    Client, Database,
 };
 use serde::{de::DeserializeOwned, Serialize};
-//use tokio::sync::OnceCell;
 
 pub struct Mongo {
     db: Database,
 }
-static MONGODB: OnceCell<Mongo> = OnceCell::const_new();
+static mut MONGO: Option<Mongo> = None;
+static INIT: Once = Once::new();
 impl Mongo {
-    pub  fn instance() -> &'static Mongo {
-        MONGODB.get_or_init(Mongo::init_mongodb)
+    pub async fn instance() -> &'static Mongo {
+        unsafe {
+            let mongo_ptr = addr_of!(MONGO);
+            match *mongo_ptr {
+                Some(ref mongo) => mongo,
+                None => {
+                    panic!("{}", "没有初始化mongodb,请先执行`Mongo::connect`方法")
+                }
+            }
+        }
     }
-    async fn init_mongodb() -> Mongo {
-        let db_host = match std::env::consts::OS {
-            "macos" => "mongodb://192.168.2.3:27017",
-            "linux" => "mongodb://mongo:27017",
-            _ => "mongodb://192.168.2.3:27017",
-        };
 
+    pub async fn connect(db_host: &str, db_name: &str) {
         let result = Client::with_uri_str(db_host).await;
         match result {
             Ok(client) => {
-                let db = client.database("wxmp");
-                Mongo { db }
+                let db = client.database(db_name);
+                unsafe {
+                    INIT.call_once(|| {
+                        MONGO = Some(Mongo { db });
+                    });
+                }
             }
             Err(err) => {
                 panic!("{}", err.to_string())
             }
         }
     }
-
     /// 插入一条数据
     pub async fn insert_one<T: Serialize + Send + Sync>(
         &self,

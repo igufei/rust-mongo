@@ -3,7 +3,6 @@ use std::fmt::Display;
 /// mongodb error
 pub struct Error(pub &'static str);
 
-
 pub trait ResultExtention<T> {
     fn has_err(self, err_text: &'static str) -> Result<T, Error>;
 }
@@ -17,7 +16,7 @@ where
         match self {
             Ok(t) => Ok(t),
             Err(e) => {
-                println!("{}",e);
+                println!("{}", e);
                 Err(Error(err_text))
             }
         }
