@@ -172,7 +172,10 @@ where
             .has_err("查询列表失败")?;
         Ok(list)
     }
-    pub async fn find_many(filter: Document, option: Option<FindOptions>) -> Result<Vec<Self>, Error> {
+    pub async fn find_many(
+        filter: Document,
+        option: Option<FindOptions>,
+    ) -> Result<Vec<Self>, Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
 
@@ -247,7 +250,10 @@ where
         Ok(count)
     }
 
-    pub async fn aggregate(pipeline: Vec<Document>, options: Option<AggregateOptions>) -> Result<Vec<Document>, Error> {
+    pub async fn aggregate(
+        pipeline: Vec<Document>,
+        options: Option<AggregateOptions>,
+    ) -> Result<Vec<Document>, Error> {
         let db = Mongo::instance().await;
         let coll_name = Self::to_coll_name();
         let list = db

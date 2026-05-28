@@ -15,10 +15,7 @@ where
     fn has_err(self, err_text: &'static str) -> Result<T, Error> {
         match self {
             Ok(t) => Ok(t),
-            Err(e) => {
-                println!("{}", e);
-                Err(Error(err_text))
-            }
+            Err(e) => Err(Error(err_text)),
         }
     }
 }
