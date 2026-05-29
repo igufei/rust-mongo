@@ -1,5 +1,5 @@
-use mongodb::bson::{doc, Document};
-pub trait FilterDoc {
+use mongodb::bson::{doc, Bson, Document};
+pub trait FilterDoc:Send {
     fn to_doc(&self) -> Document;
 }
 /// 相似
@@ -28,19 +28,19 @@ impl FilterDoc for Like {
 }
 
 /// 相等
-pub struct Eq {
+pub struct Eq<T:Into<Bson>+Send+Clone> {
     pub key: String,
-    pub value: String,
+    pub value: T,
 }
-impl Eq {
-    pub fn new(key: &str, value: &str) -> Self {
+impl<T:Into<Bson>+Send+Clone> Eq<T> {
+    pub fn new(key: &str, value: T) -> Self {
         Self {
             key: key.to_string(),
-            value: value.to_string(),
+            value,
         }
     }
 }
-impl FilterDoc for Eq {
+impl<T:Into<Bson>+Send+Clone> FilterDoc for Eq<T> {
     fn to_doc(&self) -> Document {
         let key = format!("data.{}", &self.key);
         let filter = doc! {
